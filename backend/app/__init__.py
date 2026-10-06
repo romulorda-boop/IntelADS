@@ -1,0 +1,1 @@
+"""AdIntel mock API package."""
