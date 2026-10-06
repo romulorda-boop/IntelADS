@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm --filter @adintel/web dev",
     "build": "pnpm --filter @adintel/web build",
+    "vercel-build": "cd apps/web && ./node_modules/.bin/next build",
     "typecheck": "pnpm --filter @adintel/web typecheck"
   }
 }
