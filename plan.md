@@ -1,4 +1,4 @@
-# Plano de implementação — Ad Intelligence, Fases 1 e 2
+# Plano de implementação — Ad Intelligence, Fases 1, 2 e 3
 
 ## Fase 1 — MVP com dados simulados (concluída)
 
@@ -43,3 +43,15 @@ backend/tests/                                   testes de mapeamento, sucesso e
 ## Limites conhecidos
 
 Os campos de downloads do Google Play são faixas públicas de instalações, não downloads exatos. A API pública Apple não expõe downloads; UI deve dizer isso claramente. Dados mock existentes não são fonte de verdade após sync de loja. A taxa de chamadas e disponibilidade dependem das lojas: não haverá scraping de anúncios, workers agendados, autenticação ou fila Redis nesta fase.
+
+
+## Fase 3 — Processamento de mídia e inteligência (concluída)
+
+- **pHash:** usar Pillow e ImageHash (`phash`, 64 bits). Para vídeo, tentar extrair o frame em 2,0 s com FFmpeg; se falhar ou não houver vídeo local, calcular a assinatura da thumbnail. Comparar pares por distância de Hamming e relacionar automaticamente pares `<= 10` na tabela `ad_variations`, apagando/recriando somente essas relações derivadas quando o worker rodar.
+- **Frequência:** preservar o `schema.sql` literal da Fase 1 e adicionar `backend/db/migrations/002_ad_analysis.sql`, com eventos de aparição em `ad_appearances` e marcador `is_mock`. A frequência do score conta eventos cujo `observed_at` esteja entre agora e os 30 dias anteriores; timestamps futuros ficam fora.
+- **Fórmula aprovada:** `score = min(100, dias_ativos × 1,5 + min(20, aparições_30d × 2) + min(20, variações_detectadas × 3))`, arredondado para inteiro. Os badges Winner/Scaling/Testing mantêm os limiares já usados. O worker recalcula pHash, relações e score; busca e detalhe calculam métricas atuais usando a mesma regra.
+- **API:** ampliar `POST /api/v1/ads/search` com score/breakdown e resumo de variantes; incluir `GET /api/v1/ads/{id}` e `GET /api/v1/ads/{id}/similars`. Modelos Pydantic explícitos descrevem no OpenAPI score, breakdown, badges e listas correlacionadas. O processamento pesado permanece no CLI `python -m app.workers.analyze_ads`, evitando expor uma rota pública sem autenticação que reexecuta todo o worker.
+- **Frontend:** mostrar barra de progresso no card e na modal de detalhe, com fatores de score e a seção “Variações Encontradas”. A modal mantém Escape, foco inicial, confinamento de Tab e restauração do foco ao fechar.
+- **Estrutura:** `backend/app/services/phash.py` (hash e Hamming), `backend/app/services/ad_analysis.py` (pipeline e score), `backend/app/workers/analyze_ads.py` (CLI), `backend/db/migrations/002_ad_analysis.sql` (eventos), `backend/tests/test_phash.py` (lógica), e componentes `longevity-meter.tsx`/`ad-details-modal.tsx` em `apps/web/src/components`.
+- **Limite operacional:** esta entrega habilita execução sob demanda pela CLI. O recálculo diário mencionado no roteiro de produção da especificação não é agendado no Preview temporário; requer ambiente persistente e será tratado como automação/deployment separado.
+- **Rastreabilidade da fórmula:** a fórmula original da seção 5.1 permanece como histórico da Fase 1; a fórmula acima, aprovada para a Fase 3, passa a ser a fórmula runtime vigente.

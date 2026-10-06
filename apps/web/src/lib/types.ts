@@ -2,8 +2,25 @@ export type Network = "meta" | "google" | "tiktok" | "kwai";
 export type TargetOS = "android" | "ios" | "desktop";
 export type Category = "games" | "ecommerce" | "apps" | "finance" | "infoproducts";
 export type Badge = "Winner" | "Scaling" | "Testing";
-
 export type SyncStatus = "mock" | "syncing" | "synced" | "error";
+
+export interface ScoreBreakdown {
+  active_days: number;
+  active_points: number;
+  appearances_last_30_days: number;
+  appearance_points: number;
+  variations_count: number;
+  variation_points: number;
+  score: number;
+}
+
+export interface AdVariant {
+  id: string;
+  title: string;
+  source_network: Network;
+  thumbnail_url: string;
+  hamming_distance: number;
+}
 
 export interface SyncedApp {
   id: string;
@@ -16,7 +33,7 @@ export interface SyncedApp {
   icon_url: string | null;
   category: string | null;
   sync_status: SyncStatus;
-  last_synced_at: string;
+  last_synced_at: string | null;
 }
 
 export interface Ad {
@@ -31,10 +48,12 @@ export interface Ad {
   target_os: TargetOS[];
   longevity_score: number;
   badge: Badge;
+  score_breakdown: ScoreBreakdown;
   active_days: number;
   first_seen_at?: string;
   is_active: boolean;
   variations_count: number;
+  variants: AdVariant[];
   destination_url: string;
   advertiser: { id: string; name: string } | null;
   app: {
@@ -49,6 +68,8 @@ export interface Ad {
     last_synced_at: string | null;
   } | null;
 }
+
+export type AdDetails = Ad;
 
 export interface SearchPayload {
   query?: string;

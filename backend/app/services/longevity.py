@@ -1,22 +1,42 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from math import floor
+
+FREQUENCY_WINDOW_DAYS = 30
+APPEARANCE_POINTS_PER_EVENT = 2
+MAX_APPEARANCE_POINTS = 20
+VARIATION_POINTS_PER_AD = 3
+MAX_VARIATION_POINTS = 20
+
+
+def score_breakdown(
+    active_days: int, appearances_last_30_days: int, variations_count: int
+) -> dict[str, int | float]:
+    """Break the approved 0–100 score into time, frequency and variation signals."""
+    days = max(0, int(active_days))
+    appearances = max(0, int(appearances_last_30_days))
+    variations = max(0, int(variations_count))
+    active_points = days * 1.5
+    appearance_points = min(MAX_APPEARANCE_POINTS, appearances * APPEARANCE_POINTS_PER_EVENT)
+    variation_points = min(MAX_VARIATION_POINTS, variations * VARIATION_POINTS_PER_AD)
+    raw_score = active_points + appearance_points + variation_points
+    score = min(100, floor(raw_score + 0.5))
+    return {
+        "active_days": days,
+        "active_points": active_points,
+        "appearances_last_30_days": appearances,
+        "appearance_points": appearance_points,
+        "variations_count": variations,
+        "variation_points": variation_points,
+        "score": score,
+    }
 
 
 def calculate_longevity_score(
-    active_days: int,
-    num_networks: int,
-    num_platforms: int,
-    impression_bonus: float,
+    active_days: int, appearances_last_30_days: int, variations_count: int
 ) -> int:
-    """Apply the specification formula and persist its integer result."""
-    raw_score = (
-        (active_days * 1.5)
-        + (num_networks * 10)
-        + (num_platforms * 5)
-        + impression_bonus
-    )
-    return min(100, int(round(raw_score)))
+    return int(score_breakdown(active_days, appearances_last_30_days, variations_count)["score"])
 
 
 def badge_for_score(score: int) -> str:

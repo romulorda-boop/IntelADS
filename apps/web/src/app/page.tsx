@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Activity, ArrowRight, BarChart3, Database, Layers3, Search, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { searchAds } from "@/lib/api";
+import { AdDetailsModal } from "@/components/ad-details-modal";
 import type { Ad, Category, Network, SearchResponse, TargetOS } from "@/lib/types";
 
 const NETWORKS: Network[] = ["meta", "google", "tiktok", "kwai"];
@@ -25,6 +26,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshToken, setRefreshToken] = useState(0);
+  const [activeAdId, setActiveAdId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -106,11 +108,12 @@ export default function HomePage() {
 
       <section id="creatives">
         <div className="results-header"><div className="results-title"><h2>Criativos encontrados</h2><span>{loading ? "Atualizando…" : `${data?.total ?? 0} resultados`}</span></div><label className="results-sort">Ordenar por<select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}><option value="longevity_score_desc">Maior score</option><option value="first_seen_desc">Mais recentes</option><option value="active_days_desc">Mais dias ativos</option></select></label></div>
-        {error ? <div className="error-state"><Database size={23} /><h3>API indisponível</h3><p>{error}</p></div> : loading && !data ? <div className="loading-grid"><div className="skeleton" /><div className="skeleton" /></div> : ads.length ? <div className="ad-grid">{ads.map((ad) => <AdCard key={ad.id} ad={ad} onAppSynced={() => setRefreshToken((value) => value + 1)} />)}</div> : <div className="empty-state"><Search size={24} /><h3>Nenhum criativo neste recorte</h3><p>Altere os filtros ou limpe a busca para ver mais anúncios simulados.</p></div>}
+        {error ? <div className="error-state"><Database size={23} /><h3>API indisponível</h3><p>{error}</p></div> : loading && !data ? <div className="loading-grid"><div className="skeleton" /><div className="skeleton" /></div> : ads.length ? <div className="ad-grid">{ads.map((ad) => <AdCard key={ad.id} ad={ad} onAppSynced={() => setRefreshToken((value) => value + 1)} onOpenDetails={() => setActiveAdId(ad.id)} />)}</div> : <div className="empty-state"><Search size={24} /><h3>Nenhum criativo neste recorte</h3><p>Altere os filtros ou limpe a busca para ver mais anúncios simulados.</p></div>}
         {!loading && !error && data && <div className="pagination-note"><ArrowRight size={13} />Exibindo {ads.length} de {data.total} anúncios do mock</div>}
       </section>
 
-      <div id="about" className="pagination-note" style={{ marginTop: 32 }}><span>Fase 2 • anúncios continuam mock • dados de apps podem ser sincronizados sob demanda</span></div>
+      {activeAdId && <AdDetailsModal adId={activeAdId} onClose={() => setActiveAdId(null)} />}
+      <div id="about" className="pagination-note" style={{ marginTop: 32 }}><span>Fase 3 • pHash, Ad Longevity Score e variações automáticas</span></div>
     </div>
   );
 }

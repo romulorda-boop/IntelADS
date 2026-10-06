@@ -20,3 +20,19 @@
 - Dez testes Python passaram, incluindo resposta Apple fora do formato esperado e persistência do status `error` em falhas inesperadas.
 - Sync real via Google Play e App Store e teste do botão no Preview. Reexecução do seed verificada: preserva três apps sincronizados e restaura estado `mock` para registro não sincronizado com erro antigo.
 - PostgreSQL de desenvolvimento: 18 anúncios e 11 apps; Preview e proxy de API respondendo.
+
+
+## Fase 3 — Processamento de Mídia e Inteligência de Anúncios (concluída)
+
+- [x] **Worker de Perceptual Hashing (pHash)** — Criar um módulo em Python (backend) para gerar assinaturas visuais (pHash) das imagens e thumbnails de anúncios. Adicionar a lógica de comparação de distância Hamming para agrupar automaticamente anúncios parecidos ou variações do mesmo criativo. Para vídeos, a especificação original determina extração do frame em 2,0 s; usar a thumbnail como fallback.
+- [x] **Algoritmo de Ad Longevity Score** — Criar uma função/serviço no FastAPI que calcula a nota de longevidade do anúncio (0 a 100) combinando: tempo ativo em dias, frequência de aparição nos últimos 30 dias e quantidade de variações detectadas. Aplicar a fórmula aprovada: `min(100, (dias_ativos × 1,5) + min(20, aparições_30d × 2) + min(20, variações_detectadas × 3))`.
+- [x] **Endpoints de Análise** — Atualizar os endpoints de listagem e detalhes do anúncio para retornar a nota de longevidade e a lista de anúncios variantes correlacionados.
+- [x] **Ajustes no Frontend (Next.js)** — Atualizar os cards de anúncios e a modal de detalhes para exibir o badge do Ad Longevity Score com barra de progresso visual. Adicionar uma aba ou seção de “Variações Encontradas” mostrando os outros anúncios visualmente idênticos ou parecidos.
+
+> Nota operacional: o worker pode ser executado via CLI no Preview temporário; não há endpoint HTTP público para disparar o processamento pesado. A execução diária mencionada no roteiro de produção da especificação não é agendada nesta fase e requer ambiente persistente.
+
+### Evidências da Fase 3
+
+- Worker pHash processou 18 anúncios, gerou 18 hashes e 49 pares com distância `<= 10`, sem erros.
+- 23 testes Python passaram; build de produção e typecheck TypeScript passaram.
+- Busca, filtros, score/breakdown, detalhe, similars, proxy Next e abertura da modal foram exercitados; a árvore `schema.sql` permaneceu inalterada.

@@ -4,18 +4,14 @@ import Link from "next/link";
 import { ArrowDownToLine, ArrowUpRight, Clock3, ExternalLink, Layers2, Play, Star } from "lucide-react";
 import { useRef, useState } from "react";
 import { AppSyncButton } from "@/components/app-sync-controls";
+import { LongevityMeter } from "@/components/longevity-meter";
 import type { Ad } from "@/lib/types";
 
-const networkNames: Record<string, string> = {
-  meta: "Meta",
-  tiktok: "TikTok",
-  google: "Google",
-  kwai: "Kwai",
-};
+const networkNames: Record<string, string> = { meta: "Meta", tiktok: "TikTok", google: "Google", kwai: "Kwai" };
 const osNames: Record<string, string> = { android: "Android", ios: "iOS", desktop: "Desktop" };
 const categoryNames: Record<string, string> = { games: "Jogo", ecommerce: "E-commerce", apps: "App" };
 
-export function AdCard({ ad, onAppSynced }: { ad: Ad; onAppSynced?: () => void }) {
+export function AdCard({ ad, onAppSynced, onOpenDetails }: { ad: Ad; onAppSynced?: () => void; onOpenDetails?: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const startDate = ad.first_seen_at
@@ -27,18 +23,10 @@ export function AdCard({ ad, onAppSynced }: { ad: Ad; onAppSynced?: () => void }
     const video = videoRef.current;
     if (!video) return;
     try {
-      if (video.paused) {
-        await video.play();
-        setPlaying(true);
-      } else {
-        video.pause();
-        setPlaying(false);
-      }
-    } catch {
-      setPlaying(false);
-    }
+      if (video.paused) { await video.play(); setPlaying(true); }
+      else { video.pause(); setPlaying(false); }
+    } catch { setPlaying(false); }
   };
-
   const pausePreview = () => {
     if (!videoRef.current) return;
     videoRef.current.pause();
@@ -53,6 +41,7 @@ export function AdCard({ ad, onAppSynced }: { ad: Ad; onAppSynced?: () => void }
         <span className={`score-badge badge-${ad.badge.toLowerCase()}`}><span className="badge-spark">{ad.badge === "Winner" ? "✦" : ad.badge === "Scaling" ? "↗" : "·"}</span>{ad.badge === "Scaling" ? "Em escala" : ad.badge === "Testing" ? "Em teste" : "Winner"}<b>{ad.longevity_score}</b></span>
         <div className="os-label" title={ad.target_os.map((os) => osNames[os]).join(" + ")}><span className="os-glyph">▣</span>{ad.target_os.map((os) => osNames[os]).join(" + ")}</div>
       </div>
+      <div className="ad-card-score"><LongevityMeter score={ad.longevity_score} compact /></div>
 
       <div className="ad-media" onMouseEnter={() => void preview()} onMouseLeave={pausePreview}>
         <video ref={videoRef} src={ad.media_url} poster={ad.thumbnail_url} muted loop playsInline preload="none" aria-label={`Prévia do anúncio: ${ad.title}`} />
@@ -78,7 +67,7 @@ export function AdCard({ ad, onAppSynced }: { ad: Ad; onAppSynced?: () => void }
 
         <div className="advertiser-line"><span className="advertiser-avatar">{ad.advertiser?.name.slice(0, 1) ?? "A"}</span><span className="advertiser-copy"><small>ANUNCIANTE</small><strong>{ad.advertiser?.name ?? "Anunciante não identificado"}</strong></span>{ad.advertiser && <Link href={`/advertisers/${ad.advertiser.id}`} className="profile-link">Ver perfil <ArrowUpRight size={13} /></Link>}</div>
         <p className="ad-caption"><span>“</span>{ad.caption}</p>
-        <div className="ad-meta-row"><span><Clock3 size={14} />Ativo há {ad.active_days} dias{startDate ? ` · Desde ${startDate}` : ""}</span><span><Layers2 size={14} />{ad.variations_count} {ad.variations_count === 1 ? "variação" : "variações"}</span></div>
+        <div className="ad-meta-row"><span><Clock3 size={14} />Ativo há {ad.active_days} dias{startDate ? ` · Desde ${startDate}` : ""}</span><button className="variation-action" type="button" onClick={onOpenDetails} aria-label={`Abrir detalhes e ${ad.variations_count} variações encontradas`}><Layers2 size={14} />{ad.variations_count} {ad.variations_count === 1 ? "variação" : "variações"}<span>Ver detalhes</span></button></div>
       </div>
 
       <div className="ad-card-actions"><a href={ad.media_url} download className="action-primary"><ArrowDownToLine size={15} />Baixar vídeo MP4</a><a href={ad.destination_url} target="_blank" rel="noreferrer" className="action-secondary">Ver na biblioteca<ExternalLink size={14} /></a></div>

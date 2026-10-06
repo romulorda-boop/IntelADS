@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 from app.db.session import connect_db
-from app.services.longevity import calculate_longevity_score
 from seed.fixtures import ADS, ADVERTISERS, APPS
 
 MEDIA = {
@@ -14,13 +12,13 @@ MEDIA = {
 }
 
 
+def _mock_appearances(active_days: int) -> int:
+    # Simulated repeat sightings: a maximum of ten observations in a 30-day window.
+    return max(1, min(10, (min(max(0, active_days), 30) + 2) // 3))
+
+
 def run_seed() -> None:
     now = datetime.now(timezone.utc)
-    networks_by_hash: dict[str, set[str]] = defaultdict(set)
-    for ad in ADS:
-        networks_by_hash[ad["phash"]].add(ad["network"])
-
-    app_ids = {app["id"] for app in APPS}
     if len(ADS) < 15 or len(ADS) > 20:
         raise ValueError("O seed deve conter entre 15 e 20 anúncios.")
 
@@ -66,14 +64,8 @@ def run_seed() -> None:
             )
 
         for ad in ADS:
-            active_days = ad["days"]
-            score = calculate_longevity_score(
-                active_days=active_days,
-                num_networks=len(networks_by_hash[ad["phash"]]),
-                num_platforms=ad["meta_platforms"],
-                impression_bonus=ad["impression_bonus"],
-            )
-            age_offset = 0 if ad["active"] else ad["stopped_days_ago"]
+            active_days = int(ad["days"])
+            age_offset = 0 if ad["active"] else int(ad["stopped_days_ago"])
             last_seen = now - timedelta(days=age_offset)
             first_seen = last_seen - timedelta(days=active_days)
             media_url, thumbnail_url = MEDIA[ad["creative"]]
@@ -86,7 +78,7 @@ def run_seed() -> None:
                                  first_seen_at, last_seen_at, is_active, longevity_score, phash,
                                  destination_url)
                 VALUES (%s, %s, %s, %s, %s, 'video', %s, %s, %s, %s,
-                        %s::varchar(20)[], %s, %s, %s, %s, %s, %s)
+                        %s::varchar(20)[], %s, %s, %s, 0, NULL, %s)
                 ON CONFLICT (id) DO UPDATE SET
                     advertiser_id = EXCLUDED.advertiser_id,
                     app_id = EXCLUDED.app_id,
@@ -101,8 +93,6 @@ def run_seed() -> None:
                     first_seen_at = EXCLUDED.first_seen_at,
                     last_seen_at = EXCLUDED.last_seen_at,
                     is_active = EXCLUDED.is_active,
-                    longevity_score = EXCLUDED.longevity_score,
-                    phash = EXCLUDED.phash,
                     destination_url = EXCLUDED.destination_url
                 """,
                 (
@@ -119,29 +109,26 @@ def run_seed() -> None:
                     first_seen,
                     last_seen,
                     ad["active"],
-                    score,
-                    ad["phash"],
                     destination,
                 ),
             )
 
-        for group in ("a100000000000001", "a100000000000002", "a100000000000003", "a100000000000005", "a100000000000008"):
-            members = [ad for ad in ADS if ad["phash"] == group]
-            if len(members) > 1:
-                parent = members[0]["id"]
-                for variation in members[1:]:
-                    conn.execute(
-                        """
-                        INSERT INTO ad_variations (parent_ad_id, variation_ad_id, hamming_distance)
-                        VALUES (%s, %s, %s)
-                        ON CONFLICT (parent_ad_id, variation_ad_id)
-                        DO UPDATE SET hamming_distance = EXCLUDED.hamming_distance
-                        """,
-                        (parent, variation["id"], 4),
-                    )
+        # Replace only the seed's own events; any future real observations are preserved.
+        conn.execute("DELETE FROM ad_appearances WHERE is_mock IS TRUE")
+        for ad in ADS:
+            active_days = int(ad["days"])
+            age_offset = 0 if ad["active"] else int(ad["stopped_days_ago"])
+            last_seen = now - timedelta(days=age_offset)
+            count = _mock_appearances(active_days)
+            for index in range(count):
+                offset = timedelta(days=30 * index / max(count, 1))
+                conn.execute(
+                    "INSERT INTO ad_appearances (ad_id, observed_at, is_mock) VALUES (%s, %s, TRUE)",
+                    (ad["id"], last_seen - offset),
+                )
 
     print(f"Seed concluído: {len(ADVERTISERS)} anunciantes, {len(APPS)} apps e {len(ADS)} anúncios.")
-    print(f"Apps vinculados no seed: {len(app_ids)} IDs estáveis.")
+    print("Eventos de aparição simulados atualizados; relações e scores são gerados pelo worker pHash.")
 
 
 if __name__ == "__main__":

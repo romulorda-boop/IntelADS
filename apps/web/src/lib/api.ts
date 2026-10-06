@@ -1,4 +1,4 @@
-import type { AdvertiserProfile, SearchPayload, SearchResponse, SyncedApp } from "@/lib/types";
+import type { AdDetails, AdvertiserProfile, SearchPayload, SearchResponse, SyncedApp } from "@/lib/types";
 
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -23,6 +23,11 @@ export async function searchAds(payload: SearchPayload): Promise<SearchResponse>
     cache: "no-store",
   });
   return readJson<SearchResponse>(response);
+}
+
+export async function getAdDetails(id: string): Promise<AdDetails> {
+  const response = await fetch(`/api/v1/ads/${encodeURIComponent(id)}`, { cache: "no-store" });
+  return readJson<AdDetails>(response);
 }
 
 export async function getAdvertiserProfile(id: string): Promise<AdvertiserProfile> {

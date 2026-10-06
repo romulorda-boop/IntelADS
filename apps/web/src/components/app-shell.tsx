@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mock-status"><span className="status-dot" /><span><strong>Ambiente mock</strong><small>PostgreSQL conectado</small></span></div>
           <Link href="/#filters" className="side-link subtle"><Settings2 size={17} /><span>Preferências</span></Link>
           <Link href="/#about" className="side-link subtle"><CircleHelp size={17} /><span>Sobre o MVP</span></Link>
-          <div className="sidebar-foot"><span>AD INTELLIGENCE</span><span>FASE 02</span></div>
+          <div className="sidebar-foot"><span>AD INTELLIGENCE</span><span>FASE 03</span></div>
         </div>
       </aside>
       <main className="main-shell">{children}</main>
