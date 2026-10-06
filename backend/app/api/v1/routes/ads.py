@@ -69,7 +69,8 @@ SELECT_SQL = """
         advertiser.id AS advertiser_id, advertiser.name AS advertiser_name,
         app.id AS app_id, app.store_app_id, app.title AS app_title,
         app.platform AS app_platform, app.downloads_count, app.rating AS app_rating,
-        app.icon_url AS app_icon_url, app.sync_status AS app_sync_status,
+        app.icon_url AS app_icon_url, app.category AS app_category,
+        app.sync_status AS app_sync_status,
         app.last_synced_at AS app_last_synced_at,
         COALESCE((
             SELECT json_agg(
@@ -107,6 +108,7 @@ def _serialize_ad(row: dict) -> dict:
             "downloads_count": row["downloads_count"],
             "rating": float(row["app_rating"]) if row["app_rating"] is not None else None,
             "icon_url": row["app_icon_url"],
+            "category": row["app_category"],
             "sync_status": row["app_sync_status"] or "mock",
             "last_synced_at": row["app_last_synced_at"].isoformat() if row["app_last_synced_at"] else None,
         }

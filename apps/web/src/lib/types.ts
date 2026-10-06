@@ -62,6 +62,7 @@ export interface Ad {
     downloads_count: string | null;
     rating: number | null;
     icon_url: string | null;
+    category: string | null;
     id: string;
     store_app_id: string;
     sync_status: SyncStatus;

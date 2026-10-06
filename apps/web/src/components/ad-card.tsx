@@ -5,12 +5,11 @@ import { ArrowDownToLine, ArrowUpRight, Clock3, ExternalLink, Layers2, Play, Sta
 import { useRef, useState } from "react";
 import { AppSyncButton } from "@/components/app-sync-controls";
 import { LongevityMeter } from "@/components/longevity-meter";
+import { labelAdCategory, labelStoreCategory } from "@/lib/category-labels";
 import type { Ad } from "@/lib/types";
 
 const networkNames: Record<string, string> = { meta: "Meta", tiktok: "TikTok", google: "Google", kwai: "Kwai" };
 const osNames: Record<string, string> = { android: "Android", ios: "iOS", desktop: "Desktop" };
-const categoryNames: Record<string, string> = { games: "Jogo", ecommerce: "E-commerce", apps: "App" };
-
 export function AdCard({ ad, onAppSynced, onOpenDetails }: { ad: Ad; onAppSynced?: () => void; onOpenDetails?: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -18,6 +17,7 @@ export function AdCard({ ad, onAppSynced, onOpenDetails }: { ad: Ad; onAppSynced
     ? new Date(ad.first_seen_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
     : null;
   const appMetricLabel = ad.app?.platform === "android" && ad.app.sync_status === "synced" ? "INSTALAÇÕES" : "DOWNLOADS";
+  const storeCategory = labelStoreCategory(ad.app?.category);
 
   const preview = async () => {
     const video = videoRef.current;
@@ -48,16 +48,16 @@ export function AdCard({ ad, onAppSynced, onOpenDetails }: { ad: Ad; onAppSynced
         <div className="media-shade" />
         <button className={`media-play${playing ? " is-playing" : ""}`} onClick={() => void preview()} aria-label={playing ? "Pausar prévia" : "Reproduzir prévia"}><Play size={15} fill="currentColor" /></button>
         <div className="media-caption"><span>PRÉVIA DO CRIATIVO</span><span>00:04</span></div>
-        <span className="media-category">{categoryNames[ad.category] ?? ad.category}</span>
+        <span className="media-category">{labelAdCategory(ad.category)}</span>
       </div>
 
       <div className="ad-card-content">
-        <div className="ad-title-row"><div><div className="field-label">{categoryNames[ad.category] ?? "Criativo"}</div><h3>{ad.title}</h3></div>{ad.is_active ? <span className="active-pill"><i />Ativo</span> : <span className="inactive-pill">Encerrado</span>}</div>
+        <div className="ad-title-row"><div><div className="field-label">{labelAdCategory(ad.category)}</div><h3>{ad.title}</h3></div>{ad.is_active ? <span className="active-pill"><i />Ativo</span> : <span className="inactive-pill">Encerrado</span>}</div>
 
         {ad.app ? (
           <div className="app-insight">
             {ad.app.icon_url ? <img src={ad.app.icon_url} alt="" className="app-icon" /> : <div className="app-icon app-icon-fallback">A</div>}
-            <div className="app-identity"><div className="app-name"><span>APP VINCULADO</span><strong>{ad.app.title}</strong></div><AppSyncButton appId={ad.app.id} status={ad.app.sync_status} onSynced={onAppSynced} compact /></div>
+            <div className="app-identity"><div className="app-name"><span>APP VINCULADO</span><strong>{ad.app.title}</strong>{storeCategory && storeCategory !== labelAdCategory(ad.category) && <span>{storeCategory}</span>}</div><AppSyncButton appId={ad.app.id} status={ad.app.sync_status} onSynced={onAppSynced} compact /></div>
             <div className="app-metric"><span>{appMetricLabel}</span><strong>{ad.app.downloads_count ?? (ad.app.platform === "ios" ? "Não divulgado" : "—")}</strong></div>
             <div className="app-rating"><Star size={13} fill="currentColor" /><strong>{ad.app.rating?.toFixed(1) ?? "—"}</strong></div>
           </div>

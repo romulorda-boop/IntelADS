@@ -65,7 +65,7 @@ cd backend
 ../.venv/bin/python -m app.workers.sync_app com.supercell.brawlstars
 ```
 
-Google Play usa `google-play-scraper==1.2.7`, locale `pt_BR`/`br` e devolve faixa pública de instalações, rating, ícone e gênero. O adaptador iOS usa o endpoint público Apple iTunes Lookup; não é necessária chave. A consulta pública Apple não expõe downloads: após sincronizar iOS, downloads ficam indisponíveis e a interface mostra **“Não divulgado”**. Apps mock permanecem marcados **“Dados mock”**; só uma resposta real bem-sucedida gera o badge **“Sincronizado”**. As lojas podem limitar chamadas ou mudar os dados/endpoints; falhas aparecem no controle e preservam os valores previamente salvos, salvo downloads iOS que não são publicados pela loja.
+Google Play usa `google-play-scraper==1.2.7`, locale `pt_BR`/`br` e devolve faixa pública de instalações, rating, ícone e gênero. O adaptador iOS usa o endpoint público Apple iTunes Lookup; não é necessária chave. A categoria ampla do anúncio (por exemplo, **“Jogos”**) e o gênero retornado pela loja (por exemplo, **“Ação”**) são apresentados separadamente quando o dado existe. A consulta pública Apple não expõe downloads: após sincronizar iOS, downloads ficam indisponíveis e a interface mostra **“Não divulgado”**. Apps mock permanecem marcados **“Dados mock”**; só uma resposta real bem-sucedida gera o badge **“Sincronizado”**. As lojas podem limitar chamadas ou mudar os dados/endpoints; falhas aparecem no controle e preservam os valores previamente salvos, salvo downloads iOS que não são publicados pela loja.
 
 ## Verificações
 

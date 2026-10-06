@@ -34,6 +34,10 @@ class AdAnalysisOpenAPITests(unittest.TestCase):
         for key in ("longevity_score", "badge", "score_breakdown", "results"):
             self.assertIn(key, schema["properties"])
 
+    def test_ad_openapi_exposes_app_store_category(self) -> None:
+        app_schema = self.openapi["components"]["schemas"]["AppSummaryResponse"]
+        self.assertIn("category", app_schema["properties"])
+
 
 if __name__ == "__main__":
     unittest.main()

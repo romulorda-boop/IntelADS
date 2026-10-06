@@ -5,9 +5,9 @@ import { ArrowDownToLine, ArrowUpRight, ExternalLink, Layers2, LoaderCircle, X }
 import { useEffect, useRef, useState } from "react";
 import { LongevityMeter } from "@/components/longevity-meter";
 import { getAdDetails } from "@/lib/api";
+import { labelAdCategory, labelStoreCategory } from "@/lib/category-labels";
 import type { AdDetails } from "@/lib/types";
 
-const categoryNames: Record<string, string> = { games: "Jogo", ecommerce: "E-commerce", apps: "App", finance: "Finanças", infoproducts: "Infoproduto" };
 const networkNames: Record<string, string> = { meta: "Meta", tiktok: "TikTok", google: "Google", kwai: "Kwai" };
 const osNames: Record<string, string> = { android: "Android", ios: "iOS", desktop: "Desktop" };
 
@@ -21,6 +21,7 @@ export function AdDetailsModal({ adId, onClose }: { adId: string; onClose: () =>
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
+  const appCategory = labelStoreCategory(ad?.app?.category);
   onCloseRef.current = onClose;
 
   useEffect(() => setSelectedAdId(adId), [adId]);
@@ -82,7 +83,7 @@ export function AdDetailsModal({ adId, onClose }: { adId: string; onClose: () =>
             <div className="detail-hero">
               <div className="detail-thumbnail"><img src={ad.thumbnail_url} alt="" /><span>{networkNames[ad.source_network] ?? ad.source_network}</span></div>
               <div className="detail-summary">
-                <div className="detail-tags"><span className={`score-badge badge-${ad.badge.toLowerCase()}`}>{ad.badge === "Scaling" ? "Em escala" : ad.badge === "Testing" ? "Em teste" : "Winner"}<b>{ad.longevity_score}</b></span><span className="media-category static-category">{categoryNames[ad.category] ?? ad.category}</span></div>
+                <div className="detail-tags"><span className={`score-badge badge-${ad.badge.toLowerCase()}`}>{ad.badge === "Scaling" ? "Em escala" : ad.badge === "Testing" ? "Em teste" : "Winner"}<b>{ad.longevity_score}</b></span><span className="media-category static-category">{labelAdCategory(ad.category)}</span>{appCategory && appCategory !== labelAdCategory(ad.category) && <span className="media-category static-category">{appCategory}</span>}</div>
                 <h3>{ad.title}</h3><p>{ad.caption}</p>
                 {ad.advertiser && <Link href={`/advertisers/${ad.advertiser.id}`} onClick={onClose} className="profile-link">{ad.advertiser.name}<ArrowUpRight size={13} /></Link>}
               </div>

@@ -34,5 +34,6 @@
 ### Evidências da Fase 3
 
 - Worker pHash processou 18 anúncios, gerou 18 hashes e 49 pares com distância `<= 10`, sem erros.
-- 23 testes Python passaram; build de produção e typecheck TypeScript passaram.
+- 24 testes Python passaram; build de produção e typecheck TypeScript passaram.
 - Busca, filtros, score/breakdown, detalhe, similars, proxy Next e abertura da modal foram exercitados; a árvore `schema.sql` permaneceu inalterada.
+- No Preview, “Jogos” e o gênero da loja “Ação” aparecem separados; filtro de jogos, seleção de variante e fechamento por Escape e pelo botão X foram verificados.

@@ -24,6 +24,7 @@ class AppSummaryResponse(BaseModel):
     downloads_count: str | None
     rating: float | None
     icon_url: str | None
+    category: str | None
     sync_status: Literal["mock", "syncing", "synced", "error"]
     last_synced_at: str | None
 
