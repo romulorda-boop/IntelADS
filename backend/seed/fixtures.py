@@ -21,6 +21,7 @@ APPS = [
     {"id": "b0000000-0000-4000-8000-000000000008", "advertiser": 7, "platform": "ios", "store_app_id": "id6490000002", "title": "Calmspace", "downloads_count": "5.000.000+", "rating": 4.7, "category": "apps", "icon_url": "/mock-media/fitness-app.png"},
     {"id": "b0000000-0000-4000-8000-000000000009", "advertiser": 7, "platform": "android", "store_app_id": "com.lumen.wordatlas", "title": "Word Atlas", "downloads_count": "2.000.000+", "rating": 4.5, "category": "apps", "icon_url": "/mock-media/fitness-app.png"},
     {"id": "b0000000-0000-4000-8000-000000000010", "advertiser": 7, "platform": "ios", "store_app_id": "id6490000003", "title": "Taskwise", "downloads_count": "800.000+", "rating": 4.2, "category": "apps", "icon_url": "/mock-media/fitness-app.png"},
+    {"id": "b0000000-0000-4000-8000-000000000011", "advertiser": 1, "platform": "ios", "store_app_id": "1229016807", "title": "Brawl Stars", "downloads_count": None, "rating": None, "category": "games", "icon_url": "/mock-media/gameplay.webp"},
 ]
 
 # meta_platforms is a deterministic mock input for the number of active Meta placements;

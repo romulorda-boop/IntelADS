@@ -1,44 +1,45 @@
-# Plano de implementação — Ad Intelligence, Fase 1
+# Plano de implementação — Ad Intelligence, Fases 1 e 2
 
-## Escopo e arquitetura
+## Fase 1 — MVP com dados simulados (concluída)
 
-Construir um monorepo dentro de `/home/ubuntu/adintel` com Next.js App Router + TypeScript + Tailwind na origem de preview (porta 3000), API FastAPI em Python na porta local 8000 e PostgreSQL local para os dados mock. O Next fará proxy relativo de `/api/v1/*` para FastAPI; os componentes do browser só chamam caminhos relativos. Como o banco gerenciado WebDev disponível é MySQL, não o habilitar: a exigência explícita é PostgreSQL e o preview desta fase é no sandbox com PostgreSQL nativo. Não implementar scraping, sincronização real, workers, Elasticsearch, autenticação nem coleta de lojas.
+O monorepo em `/home/ubuntu/adintel` usa Next.js App Router + TypeScript + Tailwind no Preview (porta 3000), FastAPI local (porta 8000) e PostgreSQL local. O Next encaminha URLs relativas `/api/v1/*` ao FastAPI. O banco gerenciado do WebDev não foi habilitado, pois é MySQL e o projeto exige PostgreSQL. A Fase 1 entrega busca, filtros, card, perfil, schema literal da seção 6.1 e seed mock; os dados foram validados contra a especificação.
 
-Criar `backend/db/schema.sql` com o DDL exatamente como na seção 6.1, sem acrescentar colunas/tabelas/índices. A extensão exigida por `gen_random_uuid()` ficará em bootstrap separado. O seed terá 18 anúncios determinísticos, cobrindo Jogos/E-commerce/Apps, Meta/TikTok/Google/Kwai e Android/iOS/Desktop; downloads e ratings de lojas serão valores ilustrativos para apps/jogos. Executar a fórmula de longevity em função isolada e persistir `longevity_score` ao semear. Dados de input de fórmula inexistentes no schema (redes detectadas, placements Meta, bônus estimado de impressões) serão metadados mock do seed, não novas colunas.
+## Fase 2 — sincronização com lojas
 
-A API expõe `POST /api/v1/ads/search` com busca, categoria, SO, redes, faixa de score/selo, ativo, ordenação e paginação, e `GET /api/v1/advertisers/{id}` com apps, contagens e distribuições. O frontend consome a API real local. A home apresenta filtros no topo e cards com rede, badge/score, OS, vídeo/poster, app e downloads, nota, anunciante/link, legenda, dias ativos, data de início, variações e ações de download/biblioteca. `/advertisers/[id]` exibe perfil e gráficos de pizza/rosca via Recharts.
+- **Google Play:** adicionar `google-play-scraper==1.2.7` e um cliente isolado em `backend/app/services/stores/google_play.py`, consultando por pacote com locale `pt_BR`/`br`. Normalizar installs, nota, ícone e categoria antes de persistir.
+- **App Store:** usar a API pública oficial iTunes Lookup por `trackId`, sem credencial. O client em `backend/app/services/stores/apple_app_store.py` mapeia título, nota, ícone e gênero. A consulta pública não fornece downloads/instalações; depois de sincronizar iOS, gravar `downloads_count = NULL` e exibir “Não divulgado pela loja”, sem manter o valor mock como se fosse real.
+- **Persistência evolutiva:** manter `backend/db/schema.sql` da Fase 1 intacto; aplicar `backend/db/migrations/001_app_sync_status.sql` para adicionar `sync_status` (`mock`, `syncing`, `synced`, `error`) e `last_sync_error`. `last_synced_at` já existe no schema base. Erros externos não sobrescrevem metadados válidos; respostas e logs não expõem credenciais (não são necessárias) nem corpos crus de terceiros.
+- **Worker e API:** criar serviço orquestrador compartilhado por `backend/app/workers/sync_app.py` (CLI) e `POST /api/v1/apps/sync/{app_id}`. A rota aceita o UUID local ou `store_app_id` existente, consulta somente apps registrados, faz uma requisição síncrona com timeout e persiste o resultado; não introduzir Redis/Celery nesta etapa. O endpoint retorna o estado e os metadados atualizados.
+- **Demonstração iOS real:** incluir um cadastro de Brawl Stars para iOS (track ID `1229016807`, obtido no catálogo público Apple) associado ao anunciante Supercell para que o teste iOS possa ser acionado pela própria interface. Reexecutar seed é idempotente por UUID: preserva metadados/status sincronizados; registros sem sync confirmado recebem de novo os valores mock e limpam erro antigo.
+- **Frontend:** estender as respostas de busca e perfil com UUID do app, origem/estado e `last_synced_at`; adicionar botão “Sincronizar loja”, estado de carregamento/erro e badge “Sincronizado” apenas depois de resposta real bem-sucedida. Após sucesso, atualizar busca, card e perfil para refletir os valores gravados no PostgreSQL. Estado `mock` permanece explicitamente marcado como mock.
+- **Operação:** configurar `.env.example`/README para a migração, dependência e execução de API, CLI e Preview. Google Play scraper pode sofrer bloqueios ou mudanças nos endpoints não oficiais; Apple Lookup é público e pode omitir métricas. Não se promete download de iOS nem persistência fora deste sandbox/instância.
 
-## Estrutura de projeto
+## Estrutura
 
 ```text
-apps/web/                     Next.js, páginas, componentes, estilos, API client e mídia mock
-backend/app/api/v1/            rotas de busca e perfil
-backend/app/db/                conexão e consultas PostgreSQL
-backend/app/schemas/           modelos de request/response
-backend/app/services/          longevity e agregações
-backend/db/schema.sql          DDL literal da seção 6.1
-backend/db/bootstrap.sql       pré-requisito pgcrypto separado do DDL
-backend/seed/                  fixtures e seed determinístico/idempotente
-apps/web/public/manus-routes.json manifest das páginas Preview
-package.json, pnpm-workspace.yaml, pnpm-lock.yaml
-.env.example                   configuração local documentada, sem credenciais reais
+apps/web/src/components/app-sync-controls.tsx    badge e ação reutilizável de sync
+apps/web/src/lib/api.ts, types.ts                 contratos para sync e metadados reais
+backend/app/api/v1/routes/apps.py                 POST de sincronização
+backend/app/services/app_sync.py                  resolução, orquestração e persistência
+backend/app/services/stores/google_play.py        cliente de enriquecimento Google Play
+backend/app/services/stores/apple_app_store.py    cliente da API pública iTunes Lookup
+backend/app/workers/sync_app.py                   entrada de worker via CLI
+backend/db/migrations/001_app_sync_status.sql     alteração aditiva do schema já entregue
+backend/tests/                                   testes de mapeamento, sucesso e erro
 ```
 
-## Direção visual
+## Direção visual existente
 
 - **Movimento:** painel editorial de inteligência, entre Swiss International Style e terminal analítico contemporâneo.
-- **Princípios:** hierarquia por sinal/performance; densidade alta sem sacrificar leitura; filtros visíveis e combináveis; dados simulados identificáveis como mock.
-- **Filosofia de cor:** base carvão-azulada para reduzir ruído; superfícies em ardósia; verde-lima ácido como cor própria de score/ação e violeta/coral para redes e alertas.
-- **Layout:** faixa lateral de navegação, cabeçalho utilitário, busca e filtros compactos no topo, tira horizontal com quatro sinais e feed de criativos em duas colunas; perfil com gráficos em duas colunas no desktop e coluna única no mobile.
-- **Elementos de assinatura:** monograma de varredura/linha de sinal no wordmark; pílulas de score com trilho luminoso; cartões de criativo com moldura de player.
-- **Interação:** feedback em busca e filtros, estados de carregamento/sem resultados, seleção combinada e links contextuais para perfis.
-- **Animação:** transições curtas (120–180 ms) para hover/foco; poster com leve zoom no hover; evitar movimento contínuo/redundante.
-- **Tipografia:** Space Grotesk para títulos e Inter para interface/dados, com hierarquia tipográfica curta.
-- **Essência da marca:** inteligência de anúncios para equipes de aquisição que precisam separar testes de criativos escaláveis; personalidade: precisa, incisiva, confiável.
-- **Voz:** curta e orientada a evidência. Exemplos: “Criativos que continuam rodando merecem atenção.” e “Filtre o ruído. Encontre o próximo winner.”
-- **Wordmark:** “AdIntel” acompanhado por um A geométrico atravessado por duas linhas de leitura/scan.
-- **Cor assinatura:** verde-lima elétrica, reservada para score, estados positivos e foco principal.
+- **Princípios:** hierarquia por sinal/performance; densidade alta sem sacrificar leitura; filtros visíveis e combináveis; dados mock identificáveis.
+- **Cor:** base carvão-azulada e superfícies em ardósia; verde-lima para score, sucesso real e ação; violeta/coral para redes e alertas.
+- **Layout:** faixa lateral, cabeçalho utilitário, busca/filtros no topo, tira de métricas e feed em duas colunas; perfil e apps adaptáveis a coluna única no mobile.
+- **Assinaturas:** monograma de varredura, score em pílula, cards com moldura de player; badge distinto entre “Mock” e “Sincronizado”.
+- **Interação/animação:** feedback claro para carregando, sucesso e falha; transições curtas (120–180 ms), preview de mídia no hover, sem movimento contínuo.
+- **Tipografia:** Space Grotesk para títulos e Inter para interface/dados.
+- **Essência:** inteligência de anúncios para equipes de aquisição; precisa, incisiva, confiável. Voz direta: “Filtre o ruído. Encontre o próximo winner.”
+- **Wordmark:** “AdIntel” com A geométrico e linha de scan; cor própria: verde-lima elétrica.
 
-## Restrições conhecidas
+## Limites conhecidos
 
-O schema tem apenas uma rede por anúncio e não registra placements Meta ou impressões. Portanto a fórmula é calculada fielmente com parâmetros mock no seed; o score resultante fica em `ads.longevity_score`. A duração será derivada de `first_seen_at`/`last_seen_at`. A tabela `apps` aceita apenas Android/iOS; Desktop aparece em `ads.target_os`. O gráfico temporal de 12 meses não está no recorte da Fase 1, que pediu especificamente gráficos pizza/rosca. Downloads reais, scraping e sincronização de lojas ficam para a Fase 2.
+Os campos de downloads do Google Play são faixas públicas de instalações, não downloads exatos. A API pública Apple não expõe downloads; UI deve dizer isso claramente. Dados mock existentes não são fonte de verdade após sync de loja. A taxa de chamadas e disponibilidade dependem das lojas: não haverá scraping de anúncios, workers agendados, autenticação ou fila Redis nesta fase.

@@ -63,7 +63,8 @@ def get_advertiser(advertiser_id: str) -> dict:
         ).fetchall()
         apps = conn.execute(
             """
-            SELECT title, store_app_id AS store_id, downloads_count AS downloads, platform
+            SELECT id, title, store_app_id AS store_id, downloads_count AS downloads,
+                   rating, icon_url, category, platform, sync_status, last_synced_at
             FROM apps WHERE advertiser_id = %s ORDER BY title, platform
             """,
             (advertiser_uuid,),
@@ -78,5 +79,19 @@ def get_advertiser(advertiser_id: str) -> dict:
         "inactive_ads": totals["inactive"],
         "os_distribution": _percentages(os_rows, ("android", "ios", "desktop"), "key"),
         "network_distribution": _percentages(network_rows, ("meta", "google", "tiktok", "kwai"), "key"),
-        "apps_linked": [dict(app) for app in apps],
+        "apps_linked": [
+            {
+                "id": str(app["id"]),
+                "title": app["title"],
+                "store_id": app["store_id"],
+                "downloads": app["downloads"],
+                "rating": float(app["rating"]) if app["rating"] is not None else None,
+                "icon_url": app["icon_url"],
+                "category": app["category"],
+                "platform": app["platform"],
+                "sync_status": app["sync_status"] or "mock",
+                "last_synced_at": app["last_synced_at"].isoformat() if app["last_synced_at"] else None,
+            }
+            for app in apps
+        ],
     }

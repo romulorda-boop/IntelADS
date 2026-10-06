@@ -3,6 +3,22 @@ export type TargetOS = "android" | "ios" | "desktop";
 export type Category = "games" | "ecommerce" | "apps" | "finance" | "infoproducts";
 export type Badge = "Winner" | "Scaling" | "Testing";
 
+export type SyncStatus = "mock" | "syncing" | "synced" | "error";
+
+export interface SyncedApp {
+  id: string;
+  advertiser_id: string | null;
+  platform: "android" | "ios";
+  store_app_id: string;
+  title: string;
+  downloads_count: string | null;
+  rating: number | null;
+  icon_url: string | null;
+  category: string | null;
+  sync_status: SyncStatus;
+  last_synced_at: string;
+}
+
 export interface Ad {
   id: string;
   title: string;
@@ -27,6 +43,10 @@ export interface Ad {
     downloads_count: string | null;
     rating: number | null;
     icon_url: string | null;
+    id: string;
+    store_app_id: string;
+    sync_status: SyncStatus;
+    last_synced_at: string | null;
   } | null;
 }
 
@@ -61,9 +81,15 @@ export interface AdvertiserProfile {
   os_distribution: Record<TargetOS, number>;
   network_distribution: Record<Network, number>;
   apps_linked: Array<{
+    id: string;
     title: string;
     store_id: string;
     downloads: string | null;
+    rating: number | null;
+    icon_url: string | null;
+    category: string | null;
     platform: "android" | "ios";
+    sync_status: SyncStatus;
+    last_synced_at: string | null;
   }>;
 }

@@ -1,0 +1,5 @@
+ALTER TABLE apps
+    ADD COLUMN IF NOT EXISTS sync_status VARCHAR(20) NOT NULL DEFAULT 'mock';
+
+ALTER TABLE apps
+    ADD COLUMN IF NOT EXISTS last_sync_error TEXT;

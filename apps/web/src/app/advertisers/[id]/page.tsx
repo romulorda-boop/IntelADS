@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowUpRight, Building2, Globe2, Layers3 } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { AdCard } from "@/components/ad-card";
+import { AppSyncButton } from "@/components/app-sync-controls";
 import { getAdvertiserProfile, searchAds } from "@/lib/api";
 import type { Ad, AdvertiserProfile } from "@/lib/types";
 
@@ -22,6 +23,7 @@ export default function AdvertiserPage() {
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -39,7 +41,7 @@ export default function AdvertiserPage() {
       if (alive) setError("Não foi possível carregar o perfil deste anunciante.");
     }).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [id]);
+  }, [id, refreshToken]);
 
   if (loading) return <div className="page-wrap"><div className="topbar"><div className="breadcrumb">Inteligência / <b>Perfil do anunciante</b></div></div><div className="profile-loading">Carregando dados do anunciante…</div></div>;
   if (error || !profile) return <div className="page-wrap"><div className="topbar"><div className="breadcrumb">Inteligência / <b>Perfil do anunciante</b></div></div><div className="not-found"><h2>Perfil indisponível</h2><p>{error || "Anunciante não encontrado."}</p><Link href="/" className="back-link"><ArrowLeft size={14} />Voltar à biblioteca</Link></div></div>;
@@ -50,7 +52,7 @@ export default function AdvertiserPage() {
 
   return (
     <div className="page-wrap page-profile">
-      <div className="topbar"><div className="breadcrumb">Inteligência <span> / </span><b>Perfil do anunciante</b></div><div className="topbar-right"><div className="sync-indicator"><i />Dados mock PostgreSQL</div><div className="user-chip">AD</div></div></div>
+      <div className="topbar"><div className="breadcrumb">Inteligência <span> / </span><b>Perfil do anunciante</b></div><div className="topbar-right"><div className="sync-indicator"><i />Apps sincronizáveis sob demanda</div><div className="user-chip">AD</div></div></div>
       <Link href="/" className="back-link"><ArrowLeft size={14} />Voltar para a biblioteca</Link>
       <header className="page-heading"><div><div className="eyebrow">ECOSSISTEMA DE MÍDIA</div><h1>Perfil do anunciante</h1><p>Distribuição de criativos e presença por canal.</p></div></header>
 
@@ -63,7 +65,7 @@ export default function AdvertiserPage() {
       <section className="profile-kpis" aria-label="Resumo do anunciante">
         <div className="profile-kpi"><span>Anúncios capturados</span><strong>{profile.total_ads_captured}</strong><small>ativos e inativos no mock</small></div>
         <div className="profile-kpi"><span>Anúncios ativos</span><strong>{profile.active_ads}</strong><small>{activeRate}% do inventário</small></div>
-        <div className="profile-kpi"><span>Apps vinculados</span><strong>{profile.apps_linked.length}</strong><small>cadastros simulados de loja</small></div>
+        <div className="profile-kpi"><span>Apps vinculados</span><strong>{profile.apps_linked.length}</strong><small>mock e dados de loja</small></div>
       </section>
 
       <section className="profile-charts">
@@ -76,13 +78,13 @@ export default function AdvertiserPage() {
       </section>
 
       <section className="apps-card">
-        <div className="section-title"><h2>Aplicativos vinculados</h2><span>{profile.apps_linked.length} cadastros mock</span></div>
-        {profile.apps_linked.length ? <div className="apps-list">{profile.apps_linked.map((app) => <div className="linked-app" key={`${app.platform}-${app.store_id}`}><div className="linked-app-icon"><Building2 size={15} /></div><div className="linked-app-info"><strong>{app.title}</strong><small>{app.platform === "android" ? "Google Play" : "App Store"} · {app.store_id}</small></div><div className="linked-app-downloads"><small>DOWNLOADS</small>{app.downloads ?? "—"}</div></div>)}</div> : <div className="empty-state"><p>Nenhum aplicativo vinculado.</p></div>}
+        <div className="section-title"><h2>Aplicativos vinculados</h2><span>{profile.apps_linked.length} aplicativos</span></div>
+        {profile.apps_linked.length ? <div className="apps-list">{profile.apps_linked.map((app) => <div className="linked-app" key={app.id}><div className="linked-app-icon">{app.icon_url ? <img src={app.icon_url} alt="" /> : <Building2 size={15} />}</div><div className="linked-app-info"><strong>{app.title}</strong><small>{app.platform === "android" ? "Google Play" : "App Store"} · {app.store_id}</small></div><div className="linked-app-metrics"><div className="linked-app-downloads"><small>{app.platform === "android" && app.sync_status === "synced" ? "INSTALAÇÕES" : "DOWNLOADS"}</small>{app.downloads ?? (app.platform === "ios" ? "Não divulgado" : "—")}</div><div className="linked-app-rating"><small>RATING</small>{app.rating?.toFixed(1) ?? "—"}</div></div><AppSyncButton appId={app.id} status={app.sync_status} onSynced={() => setRefreshToken((value) => value + 1)} compact /></div>)}</div> : <div className="empty-state"><p>Nenhum aplicativo vinculado.</p></div>}
       </section>
 
       <section className="profile-feed">
         <div className="section-title"><h2>Criativos do anunciante</h2><span><Layers3 size={12} style={{ verticalAlign: -2, marginRight: 4 }} />{ads.length} anúncios</span></div>
-        {ads.length ? <div className="feed-grid">{ads.map((ad) => <AdCard key={ad.id} ad={ad} />)}</div> : <div className="empty-state"><p>Nenhum criativo relacionado neste mock.</p></div>}
+        {ads.length ? <div className="feed-grid">{ads.map((ad) => <AdCard key={ad.id} ad={ad} onAppSynced={() => setRefreshToken((value) => value + 1)} />)}</div> : <div className="empty-state"><p>Nenhum criativo relacionado neste mock.</p></div>}
       </section>
     </div>
   );

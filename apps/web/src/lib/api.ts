@@ -1,9 +1,16 @@
-import type { AdvertiserProfile, SearchPayload, SearchResponse } from "@/lib/types";
+import type { AdvertiserProfile, SearchPayload, SearchResponse, SyncedApp } from "@/lib/types";
 
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(detail || `A API respondeu com status ${response.status}.`);
+    let message = `A API respondeu com status ${response.status}.`;
+    try {
+      const body = await response.json();
+      const detail = body?.detail;
+      message = typeof detail === "string" ? detail : detail?.message ?? message;
+    } catch {
+      // Keep the concise HTTP fallback when the response is not JSON.
+    }
+    throw new Error(message);
   }
   return response.json() as Promise<T>;
 }
@@ -23,4 +30,12 @@ export async function getAdvertiserProfile(id: string): Promise<AdvertiserProfil
     cache: "no-store",
   });
   return readJson<AdvertiserProfile>(response);
+}
+
+export async function syncApp(appId: string): Promise<SyncedApp> {
+  const response = await fetch(`/api/v1/apps/sync/${encodeURIComponent(appId)}`, {
+    method: "POST",
+    cache: "no-store",
+  });
+  return readJson<SyncedApp>(response);
 }

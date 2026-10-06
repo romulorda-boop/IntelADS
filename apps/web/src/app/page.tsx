@@ -24,6 +24,7 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState<"longevity_score_desc" | "first_seen_desc" | "active_days_desc">("longevity_score_desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -57,7 +58,7 @@ export default function HomePage() {
       }
     }, 80);
     return () => { alive = false; window.clearTimeout(timer); };
-  }, [query, category, selectedOS, selectedNetworks, scoreBand, activeOnly, sortBy]);
+  }, [query, category, selectedOS, selectedNetworks, scoreBand, activeOnly, sortBy, refreshToken]);
 
   const toggleOS = (os: TargetOS) => setSelectedOS((current) => current.includes(os) ? current.filter((item) => item !== os) : [...current, os]);
   const toggleNetwork = (network: Network) => setSelectedNetworks((current) => current.includes(network) ? current.filter((item) => item !== network) : [...current, network]);
@@ -74,7 +75,7 @@ export default function HomePage() {
     <div className="page-wrap">
       <div className="topbar">
         <div className="breadcrumb">Inteligência <span> / </span><b>Biblioteca de anúncios</b></div>
-        <div className="topbar-right"><div className="sync-indicator"><i />Mock local sincronizado</div><div className="user-chip">AD</div></div>
+        <div className="topbar-right"><div className="sync-indicator"><i />Apps sincronizáveis sob demanda</div><div className="user-chip">AD</div></div>
       </div>
 
       <header className="page-heading">
@@ -105,11 +106,11 @@ export default function HomePage() {
 
       <section id="creatives">
         <div className="results-header"><div className="results-title"><h2>Criativos encontrados</h2><span>{loading ? "Atualizando…" : `${data?.total ?? 0} resultados`}</span></div><label className="results-sort">Ordenar por<select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}><option value="longevity_score_desc">Maior score</option><option value="first_seen_desc">Mais recentes</option><option value="active_days_desc">Mais dias ativos</option></select></label></div>
-        {error ? <div className="error-state"><Database size={23} /><h3>API indisponível</h3><p>{error}</p></div> : loading && !data ? <div className="loading-grid"><div className="skeleton" /><div className="skeleton" /></div> : ads.length ? <div className="ad-grid">{ads.map((ad) => <AdCard key={ad.id} ad={ad} />)}</div> : <div className="empty-state"><Search size={24} /><h3>Nenhum criativo neste recorte</h3><p>Altere os filtros ou limpe a busca para ver mais anúncios simulados.</p></div>}
+        {error ? <div className="error-state"><Database size={23} /><h3>API indisponível</h3><p>{error}</p></div> : loading && !data ? <div className="loading-grid"><div className="skeleton" /><div className="skeleton" /></div> : ads.length ? <div className="ad-grid">{ads.map((ad) => <AdCard key={ad.id} ad={ad} onAppSynced={() => setRefreshToken((value) => value + 1)} />)}</div> : <div className="empty-state"><Search size={24} /><h3>Nenhum criativo neste recorte</h3><p>Altere os filtros ou limpe a busca para ver mais anúncios simulados.</p></div>}
         {!loading && !error && data && <div className="pagination-note"><ArrowRight size={13} />Exibindo {ads.length} de {data.total} anúncios do mock</div>}
       </section>
 
-      <div id="about" className="pagination-note" style={{ marginTop: 32 }}><span>Ambiente MVP • métricas e criativos demonstrativos • sem scraping nem sincronização de lojas</span></div>
+      <div id="about" className="pagination-note" style={{ marginTop: 32 }}><span>Fase 2 • anúncios continuam mock • dados de apps podem ser sincronizados sob demanda</span></div>
     </div>
   );
 }

@@ -41,13 +41,16 @@ def run_seed() -> None:
                 INSERT INTO apps (id, advertiser_id, platform, store_app_id, title,
                                   icon_url, downloads_count, rating, category)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (platform, store_app_id) DO UPDATE SET
+                ON CONFLICT (id) DO UPDATE SET
                     advertiser_id = EXCLUDED.advertiser_id,
-                    title = EXCLUDED.title,
-                    icon_url = EXCLUDED.icon_url,
-                    downloads_count = EXCLUDED.downloads_count,
-                    rating = EXCLUDED.rating,
-                    category = EXCLUDED.category
+                    title = CASE WHEN apps.sync_status = 'synced' THEN apps.title ELSE EXCLUDED.title END,
+                    icon_url = CASE WHEN apps.sync_status = 'synced' THEN apps.icon_url ELSE EXCLUDED.icon_url END,
+                    downloads_count = CASE WHEN apps.sync_status = 'synced' THEN apps.downloads_count ELSE EXCLUDED.downloads_count END,
+                    rating = CASE WHEN apps.sync_status = 'synced' THEN apps.rating ELSE EXCLUDED.rating END,
+                    category = CASE WHEN apps.sync_status = 'synced' THEN apps.category ELSE EXCLUDED.category END,
+                    sync_status = CASE WHEN apps.sync_status = 'synced' THEN 'synced' ELSE 'mock' END,
+                    last_synced_at = CASE WHEN apps.sync_status = 'synced' THEN apps.last_synced_at ELSE NULL END,
+                    last_sync_error = CASE WHEN apps.sync_status = 'synced' THEN apps.last_sync_error ELSE NULL END
                 """,
                 (
                     app["id"],

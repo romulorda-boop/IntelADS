@@ -81,8 +81,10 @@ def search_ads(payload: AdSearchRequest) -> dict:
                 (SELECT COUNT(*) FROM ad_variations v
                  WHERE v.parent_ad_id = a.id OR v.variation_ad_id = a.id) AS variations_count,
                 advertiser.id AS advertiser_id, advertiser.name AS advertiser_name,
-                app.title AS app_title, app.platform AS app_platform,
-                app.downloads_count, app.rating AS app_rating, app.icon_url AS app_icon_url
+                app.id AS app_id, app.store_app_id, app.title AS app_title,
+                app.platform AS app_platform, app.downloads_count, app.rating AS app_rating,
+                app.icon_url AS app_icon_url, app.sync_status AS app_sync_status,
+                app.last_synced_at AS app_last_synced_at
             {FROM_SQL}
             {where_sql}
             ORDER BY {order_sql}
@@ -96,11 +98,15 @@ def search_ads(payload: AdSearchRequest) -> dict:
         app = None
         if row["app_title"]:
             app = {
+                "id": str(row["app_id"]),
+                "store_app_id": row["store_app_id"],
                 "title": row["app_title"],
                 "platform": row["app_platform"],
                 "downloads_count": row["downloads_count"],
                 "rating": float(row["app_rating"]) if row["app_rating"] is not None else None,
                 "icon_url": row["app_icon_url"],
+                "sync_status": row["app_sync_status"] or "mock",
+                "last_synced_at": row["app_last_synced_at"].isoformat() if row["app_last_synced_at"] else None,
             }
         advertiser = None
         if row["advertiser_id"]:
