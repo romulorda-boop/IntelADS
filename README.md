@@ -99,3 +99,10 @@ Fórmula aprovada da Fase 3: `min(100, (dias_ativos × 1,5) + min(20, apariçõe
 - `GET /api/v1/ads/{ad_id}/similars` — retorna score, badge, breakdown e anúncios correspondentes a até 10 bits de Hamming.
 
 A execução do worker ocorre pela CLI acima; uma rota HTTP pública não expõe a execução pesada do processamento. A execução recorrente diária descrita como comportamento de produção na especificação não fica agendada no Preview temporário; pode ser conectada a um ambiente persistente/automação na próxima etapa.
+
+
+## Publicação WebDev
+
+O contrato de publicação usa o `Dockerfile` da raiz. A imagem instala os toolchains fixados pelo projeto, compila o frontend e inicia Next.js e FastAPI no mesmo contêiner; o `PORT` define a porta pública (padrão `3000`). O Next encaminha `/api/v1/*` e `/health` ao FastAPI interno, e `/health` é o healthcheck público do contêiner.
+
+O banco gerenciado do WebDev não foi ativado: ele oferece MySQL, enquanto o sistema exige PostgreSQL. **Antes de publicar uma instância funcional**, configure `DATABASE_URL` como segredo de runtime com uma conexão a um PostgreSQL externamente acessível. Aplicar bootstrap, `schema.sql`, migrations e seed nesse banco continua sendo uma ação separada; a publicação não executa migrations nem seed automaticamente. Sem essa variável, o healthcheck pode responder, mas as rotas que leem dados falharão ao conectar ao banco.

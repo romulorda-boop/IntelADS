@@ -55,3 +55,10 @@ Os campos de downloads do Google Play são faixas públicas de instalações, n�
 - **Estrutura:** `backend/app/services/phash.py` (hash e Hamming), `backend/app/services/ad_analysis.py` (pipeline e score), `backend/app/workers/analyze_ads.py` (CLI), `backend/db/migrations/002_ad_analysis.sql` (eventos), `backend/tests/test_phash.py` (lógica), e componentes `longevity-meter.tsx`/`ad-details-modal.tsx` em `apps/web/src/components`.
 - **Limite operacional:** esta entrega habilita execução sob demanda pela CLI. O recálculo diário mencionado no roteiro de produção da especificação não é agendado no Preview temporário; requer ambiente persistente e será tratado como automação/deployment separado.
 - **Rastreabilidade da fórmula:** a fórmula original da seção 5.1 permanece como histórico da Fase 1; a fórmula acima, aprovada para a Fase 3, passa a ser a fórmula runtime vigente.
+
+
+## Contrato de publicação WebDev
+
+- Uma imagem `Dockerfile` da raiz instala a versão de Node e pnpm fixada pelo monorepo, as dependências Python do backend e FFmpeg para os workers. O build de produção do Next.js é realizado no próprio contêiner, sem um contrato de build estático separado.
+- `docker-entrypoint.sh` supervisiona Next.js e FastAPI no mesmo contêiner. O Next atende a porta pública `PORT` (3000 por padrão); FastAPI fica em `127.0.0.1:8000`. Rewrites encaminham `/api/v1/*` e `/health` ao FastAPI; `/health` não depende da conexão ao banco.
+- `DATABASE_URL` precisa ser um segredo de runtime apontando para um PostgreSQL externo. O banco gerenciado WebDev é MySQL e não é compatível com o schema; migrations e seed são operados separadamente, sem inicialização destrutiva no boot.
